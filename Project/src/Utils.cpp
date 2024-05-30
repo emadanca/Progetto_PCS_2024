@@ -13,33 +13,6 @@ using namespace DFNLibrary;
 
 namespace DFNLibrary {
 
-ostream& operator << (ostream& os, const Point3D& point)
-{
-    os <<"{"<< point.x << ";"<< point.y << ";" << point.z << "}" << endl;
-    return os;
-}
-
-Point3D operator-(const Point3D& p1, const Point3D& p2)
-{
-    return Point3D(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
-}
-
-Point3D operator+(const Point3D& p1, const Point3D& p2)
-{
-    return Point3D(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
-}
-
-bool operator==(const Point3D& p1, const Point3D& p2)
-{
-    // Definisci una tolleranza per il confronto
-    double tolerance = 1e-6; // Ad esempio, 1e-6 per confronti con doppia precisione (double)
-
-    // Effettua il confronto delle coordinate considerando la tolleranza
-    return (abs(p1.x - p2.x) < tolerance) &&
-           (abs(p1.y - p2.y) < tolerance) &&
-           (abs(p1.z - p2.z) < tolerance);
-}
-
 // Funzione per leggere i dati DFN da un file
 void readDFN(const string& filename, vector<Fracture>& fractures)
 {
@@ -89,6 +62,7 @@ void readDFN(const string& filename, vector<Fracture>& fractures)
             issx >> x >> delimiter;
             x_values.push_back(x);
 
+
         }
 
         getline(file, line); //leggiamo la riga contentente le y
@@ -113,8 +87,8 @@ void readDFN(const string& filename, vector<Fracture>& fractures)
             issz >> z >> delimiter;
             z_values.push_back(z);
         }
-
-        // Creazione dei punti
+        unsigned int count_vertices = 0;
+        // Creazione e idicizzazione dei punti
         vector<Point3D> vertices;
         for (size_t ii = 0; ii < x_values.size(); ++ii)
         {
@@ -124,6 +98,10 @@ void readDFN(const string& filename, vector<Fracture>& fractures)
             p.z = z_values[ii];
             // cout << "il punto è: " << p << endl;
             fracture.vertices.push_back(p);
+            //unsigned int count_vertices = 0;
+            fracture.IndiciVertices.push_back(count_vertices);
+            cout << "indici dei vertici: " << fracture.IndiciVertices[ii] << endl;
+            count_vertices++;
         }
 
         // Calcolo della normale per ogni frattura
@@ -133,6 +111,7 @@ void readDFN(const string& filename, vector<Fracture>& fractures)
         //calcolo del centrometro della frattura
         // Inizializziamo il centro come (0, 0, 0)
         Point3D center = {0.0, 0.0, 0.0};
+
 
         // Sommiamo le coordinate di tutti i vertici
         for (const auto& vertex : fracture.vertices)
@@ -153,48 +132,6 @@ void readDFN(const string& filename, vector<Fracture>& fractures)
     }
 
     file.close();
-}
-
-// Funzione per calcolare il prodotto vettoriale tra due vettori in 3D
-// Il prodotto vettoriale fornisce un vettoreche rappresenta la normale
-// del piano passante per per tre punti.
-// Assumiamo che i tre punti NON SIANO ALLINEATI
-Point3D crossProduct(const Point3D& A, const Point3D& B, const Point3D& C)
-{
-    Point3D result;
-    result.x = (B.y - A.y) * (C.z - A.z) - (B.z - A.z) * (C.y - A.y);
-    result.y = (B.z - A.z) * (C.x - A.x) - (B.x - A.x) * (C.z - A.z);
-    result.z = (B.x - A.x) * (C.y - A.y) - (B.y - A.y) * (C.x - A.x);
-    // Calcola il termine noto dell'equazione del piano
-    return result;
-}
-double dotProduct(const Point3D& u, const Point3D& v)
-{
-    return u.x * v.x + u.y * v.y + u.z * v.z;
-}
-// Funzione per calcolare il termine noto dell'equazione del piano
-double calculateD(const Point3D& normal, const Point3D& pointOnPlane)
-{
-    return -dotProduct(normal, pointOnPlane);
-}
-// Prodotto vettoriale dati solo due punti
-Point3D crossProduct(const Point3D& v1, const Point3D& v2)
-{
-    Point3D result;
-    result.x = v1.y * v2.z - v1.z * v2.y;
-    result.y = v1.z * v2.x - v1.x * v2.z;
-    result.z = v1.x * v2.y - v1.y * v2.x;
-    return result;
-}
-
-
-// Funzione per calcolare la distanza euclidea tra due punti
-double distance(const Point3D& A, const Point3D& B)
-{
-    double dx = B.x - A.x;
-    double dy = B.y - A.y;
-    double dz = B.z - A.z;
-    return sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 Point3D intersectionPlaneLine(const Point3D& coefficienti, const double d, const Point3D& A, const Point3D& B)
@@ -264,7 +201,7 @@ bool areFracturesFarApart(const Fracture& fracture1, const Fracture& fracture2)
         return false;
 }
 
-bool checkVertices(const Fracture& f, const Point3D& planeCoeff, double planeD, std::vector<Point3D>& ip, bool& onPlane)
+bool checkVertices(const Fracture& f, const Point3D& planeCoeff, double planeD, vector<Point3D>& ip, bool& onPlane)
 {
     double tol = 1e-6; // Valore di tolleranza
     bool potentialIntersection = true;
@@ -753,7 +690,7 @@ vector<Trace> findTrace(const vector<Fracture>& fractures, double tol)
     return traces;
 }
 
-// Funzione per scrivere le tracce su un file
+// Funzioni per scrivere le tracce su un file
 void printTracesToFile(const vector<Trace>& traces, const string& filename)
 {
     ofstream file(filename);
@@ -773,8 +710,9 @@ void printTracesToFile(const vector<Trace>& traces, const string& filename)
 
     file.close();
 }
-void sortAndDivideTracesByFracture(const vector<Trace>& traces, const string& filename)
+void sortAndDivideTracesByFracture(const vector<Trace>& traces, vector<Fracture>& fractures, const string& filename)
 {
+
     ofstream file(filename);
     if (!file.is_open()) {
         cerr << "Error opening file: " << filename << std::endl;
@@ -784,15 +722,11 @@ void sortAndDivideTracesByFracture(const vector<Trace>& traces, const string& fi
     map<int, vector<Trace>> fractureTraces;
 
     // Raggruppa le tracce per frattura
-    for (const auto& trace : traces) {
+    for (const auto& trace : traces)
+    {
         fractureTraces[trace.fracture_id1].push_back(trace);
         fractureTraces[trace.fracture_id2].push_back(trace);
     }
-
-    // Comparator function to sort traces by length in descending order
-    auto compareByLengthDesc = [](const Trace& a, const Trace& b) {
-        return a.length > b.length;
-    };
 
     // Elabora ogni frattura separatamente
     for (const auto& [fractureId, fractureTraceList] : fractureTraces)
@@ -800,11 +734,15 @@ void sortAndDivideTracesByFracture(const vector<Trace>& traces, const string& fi
         vector<Trace> passingTraces;
         vector<Trace> nonPassingTraces;
 
-        for (const auto& trace : fractureTraceList) {
+        for (const auto& trace : fractureTraceList)
+        {
             if ((trace.fracture_id1 == fractureId && trace.Tips[0] == false) ||
-                (trace.fracture_id2 == fractureId && trace.Tips[1] == false)) {
+                (trace.fracture_id2 == fractureId && trace.Tips[1] == false))
+            {
                 passingTraces.push_back(trace);
-            } else {
+            }
+            else
+            {
                 nonPassingTraces.push_back(trace);
             }
         }
@@ -812,6 +750,17 @@ void sortAndDivideTracesByFracture(const vector<Trace>& traces, const string& fi
         // Ordina le tracce passanti e non passanti per lunghezza decrescente
         sort(passingTraces.begin(), passingTraces.end(), compareByLengthDesc);
         sort(nonPassingTraces.begin(), nonPassingTraces.end(), compareByLengthDesc);
+
+        // Trova la frattura corrispondente nel vettore fractures e aggiorna i suoi campi
+        for (auto& fracture : fractures)
+        {
+            if (fracture.idFracture == fractureId)
+            {
+                fracture.PassingTraces = passingTraces;
+                fracture.nonPassingTraces = nonPassingTraces;
+                break; // Esci dal ciclo una volta trovata la frattura corrispondente
+            }
+        }
 
         // Stampa i risultati per questa frattura
         file << "# FractureId; NumTraces\n" << fractureId << "; " << passingTraces.size() + nonPassingTraces.size() << "\n";

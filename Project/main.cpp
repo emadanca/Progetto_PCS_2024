@@ -1,4 +1,6 @@
 #include "Utils.hpp"
+#include "Utils2.hpp"
+#include "PolygonalMesh.hpp"
 #include <sstream>
 #include <iostream>
 #include <cmath>
@@ -6,6 +8,7 @@
 
 using namespace std;
 using namespace DFNLibrary;
+using namespace PolygonalLibrary;
 
 int main()
 {
@@ -78,13 +81,12 @@ int main()
     double tol = 1.e-16;
 
     vector<Fracture> fractures;
-    vector<Trace> traces;
     array<bool,2> onThePlane;
 
     // Leggi i dati DFN dal file
-    readDFN("DFN/FR10_data.txt", fractures);
+    readDFN("DFN/FR3_data.txt", fractures);
     cout << "size fractures " << fractures.size() << endl;
-
+/*
     for (size_t i = 0; i < fractures.size(); i++) {
         Fracture f = fractures[i];
         cout << "Fracture " << i << " vertices:" << endl;
@@ -92,9 +94,11 @@ int main()
         for (const auto& vertex : f.vertices) {
             cout << vertex << endl;
         }
-
-    for (size_t i = 0; i < fractures.size(); ++i) {
-        for (size_t j = i +1; j < fractures.size(); ++j) {
+*/
+    for (size_t i = 0; i < fractures.size(); ++i)
+    {
+        for (size_t j = i +1; j < fractures.size(); ++j)
+        {
             const Fracture& f1 = fractures[i];
             // cout << "VERTICI VERI : " << f1.vertices[0] << ";" << f1.vertices[1] << ";" << f1.vertices[2] << endl;
             const Fracture& f2 = fractures[j];
@@ -123,10 +127,67 @@ int main()
 
     // Stampa le tracce su file
     printTracesToFile(traces, "traces.txt");
-    sortAndDivideTracesByFracture(traces, "tracesSorted.txt");
+    sortAndDivideTracesByFracture(traces, fractures, "tracesSorted.txt");
 
+    for (Fracture& fracture : fractures)
+    {
+        PolygonalMesh mesh = SubPolygonMesh(fracture, fracture.PassingTraces, fracture.nonPassingTraces, fracture.vertices);
+        cout << "Number of Cell0D (Vertices): " << mesh.NumberCell0D << endl;
+        cout << "Cell0D Ids: ";
+        for (const auto& id : mesh.Cell0DId) {
+            cout << id << " ";
+        }
+        cout << std::endl;
+
+        cout << "Cell0D Coordinates: " << std::endl;
+        for (const auto& coord : mesh.Cell0DCoordinates) {
+            cout << "(" << coord.x << ", " << coord.y << ", " << coord.z << ") ";
+        }
+        cout << endl;
+
+        cout << "Number of Cell1D (Edges): " << mesh.NumberCell1D << endl;
+        cout << "Cell1D Ids: ";
+        for (const auto& id : mesh.Cell1DId) {
+            cout << id << " ";
+        }
+        cout << endl;
+
+        cout << "Cell1D Vertices (fromId, toId): " << endl;
+        for (const auto& edge : mesh.Cell1DVertices) {
+            cout << "(" << edge.first << ", " << edge.second << ") ";
+        }
+        cout << endl;
+
+        cout << "Number of Cell2D (Polygons): " << mesh.NumberCell2D << endl;
+        cout << "Cell2D Ids: ";
+        for (const auto& id : mesh.Cell2DId) {
+            cout << id << " ";
+        }
+        cout << endl;
+
+        cout << "Cell2D Vertices: " << endl;
+        for (const auto& poly : mesh.Cell2DVertices) {
+            cout << "[ ";
+            for (const auto& vertex : poly) {
+                cout << vertex << " ";
+            }
+            cout << "] ";
+        }
+        cout << endl;
+
+        cout << "Cell2D Edges: " << endl;
+        for (const auto& poly : mesh.Cell2DEdges) {
+            cout << "[ ";
+            for (const auto& edge : poly) {
+                cout << edge << " ";
+            }
+            cout << "] ";
+        }
+        cout << endl;
+    }
     return 0;
 
-}
+
+
 }
 
