@@ -128,6 +128,7 @@ bool areFracturesFarApart(const Fracture& fracture1, const Fracture& fracture2);
 
 //############### INTERSEZIONI FRATTURE ##############
 Point3D intersectionPlaneLine(const Point3D& coefficienti, const double d, const Point3D& A, const Point3D& B);
+bool checkVertices(const Fracture& f, const Point3D& planeCoeff, double planeD, vector<Point3D>& ip, bool& onPlane);
 bool findIntersection2(const Fracture& f1, const Fracture& f2, vector<Point3D>& intersectionPoints, double tol, array<bool,2> onThePlane);
 bool findInternalPoints(vector<Point3D>& intersectionPoints, double tol, vector<Point3D>& internalPoints, array<bool,2>& traceTips);
 vector<Trace> findTrace(const vector<Fracture>& fractures, double tol);
